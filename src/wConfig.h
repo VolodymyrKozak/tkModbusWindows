@@ -61,6 +61,7 @@ typedef enum{
 }phases_rotation_type_t;
 
 extern const BYTE ANDmaskTK_Icon[];
+
 #define procentd_t int
 
 

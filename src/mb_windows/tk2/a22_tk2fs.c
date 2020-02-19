@@ -80,6 +80,8 @@ static uint32_t tk2fsBtnSleepCntr = 0;
 
 static void f_readFStk2(HWND hwnd);
 static void f_writeFStk2(HWND hwnd, tk2_fs_t *pw);
+static uint16_t dc(float a);
+static uint16_t fr(float a);
 
 
 /* Регістрація класу вікна, викликається при запуску програми */

@@ -295,6 +295,10 @@ static uint16_t  f_tw_txWaitedByteNumber(
 		n=8;
 	}
 	break;
+	case 0x10:{
+		n=8;
+	}
+	break;
 	case 0x11:{
 
 		n=10;/* ฤ๋ÿ าส5 */

@@ -17,6 +17,100 @@
 //#include "../../mb_devs/tk4_dist.h"
 #include "../../auxs/electro.h"
 
+
+typedef struct {
+	float amperageAclbr; 	// 0х2000
+	float clbr_iA;			// 0х2002
+
+	float amperageBclbr;	// 0х2004
+	float clbr_iB;			// 0х2006
+
+	float amperageCclbr;    // 0х2008
+	float clbr_iC;	        // 0х200A
+
+	float voltageCclbr;		// 0х200C
+	float clbr_uC;			// 0х200E
+
+	uint16_t DeviceMode;     //0x1010 Типорозмір контролера 1...5
+	uint16_t Faznost;		 //0x1011
+
+	uint32_t xx12;       	 //0x1012
+
+	uint32_t xx14;			 //0x1014
+	uint32_t xx16;			 //0x1016
+
+	uint32_t xx18;			//0x1018
+	uint32_t xx1A;			//0x101A
+
+	uint32_t xx1C;			//0x101C
+	uint32_t xCRCA;			//0x101E
+}tk5fs_t;
+
+
+
+
+
+
+
+
+typedef enum {
+ LowVoltageInductionMotorsProtection,
+ LowVoltagePowerSupply
+}oper_mode_t;
+
+typedef enum{
+	//10А	2..10 сек 	102..513 сек   300сек
+	IEC_60947_Class10A   = 0,
+	//10	4..10 сек	204..513 сек,  400сек
+	IEC_60947_Class10    = 1,
+	//20	6..20 сек	308..1026 сек/* Еквівалент Тк2 687сес */
+	IEC_60947_Class20	 = 2,
+	//30	9..30 сек	462..1540 сек  1000сек
+	IEC_60947_Class30	 = 3
+}motor_protection_relay_class_t;
+typedef struct {
+
+
+	oper_mode_t oper_mode;                          //0х1000
+
+	FunctionalState motor_OverLoadProtection;       //0х1001
+
+	float rated_amperage_set;						//0x1002
+	motor_protection_relay_class_t OverLoadInstProtectionClass;
+	uint16_t current_limit;							//0x040C
+
+	FunctionalState motor_UnderLoadProtection;
+	float rated_motor_power;						//0x0408..9
+	uint16_t power_limit;
+
+	FunctionalState motor_OverVoltageProtection;
+	uint16_t overvoltage_limit;
+
+	FunctionalState motor_AmperageUnbalanceProtection;
+	uint16_t unbalance_limit;
+
+	FunctionalState motor_GroundProtection;
+	uint16_t ground_leak_limit;
+
+	FunctionalState motor_StartNumberLimit;
+	uint16_t start_numbe_limit;
+
+	FunctionalState motor_JummedProtection;
+	uint16_t reserve0;
+
+	FunctionalState Phase_A_OverLoadProtection;
+	float Phase_A_current_tripping_limit;
+	FunctionalState Phase_B_OverLoadProtection;
+	float Phase_B_current_tripping_limit;
+	FunctionalState Phase_C_OverLoadProtection;
+	float Phase_C_current_tripping_limit;
+
+
+	uint32_t usCRC;
+} tk5user_settings_t;
+
+
+
 /* РЕГІСТРИ ЧИТАТИ */
 #define TIMER_MAIN_MS                   50  /* IDT_TIMER_tk5_10MS  */
 #define RG_R_tk5_MODE 					0x0200
@@ -101,8 +195,10 @@
 #define IDB_tk5DIST_EXIT					439
 #define IDPB_tk5QUEUE_MSG 					440
 
-
-
+#define IDB_tk5WRITE_USERSETTING_TO_MEMORY     8011
+#define IDB_tk5WRITE_USERSETTING_TO_FLASH      8012
+#define IDB_tk5READ_USERSETTING_FROM_MEMORY    8013
+#define IDB_tk5READ_FACILITYSETTING_FROM_MEMORY 		8023
 extern uint8_t tk5_Addr;
 
 extern HWND hWndTk5;
@@ -227,15 +323,12 @@ typedef struct{
 }grid_t;
 extern grid_t grid;
 
-
-
-
-uint32_t f_tk5QPWD_RgAnswer(
+int32_t f_tk5QPWD_RgAnswer(
 		modbus_status_t ms,
 		modbus_master_tx_msg_t *mb_tx_msg,
 		modbus_master_rx_msg_t *mb_rx_msg,
-		int incase
-		);
+		int incase);
+
 int f_Set5TxReadReg(uint16_t addr,modbus_master_tx_msg_t *tx);
 int f_Set5TxWriteReg(uint16_t addr, uint16_t value,modbus_master_tx_msg_t *tx);
 
@@ -259,5 +352,7 @@ int f_tk5UpdateStat(
 		);
 void f_tk5Logging(char *str, size_t n_str);
 int16_t f_GetTk5ModbussAddress(int ID_EditBox);
-
+int f_read_facilitysetting_from_tk5memory(HWND hwnd);
+int f_read_usersetting_from_tk5memory(HWND hwnd);
 #endif /* SRC_MB_WINDOWS_tk5_A3_tk5Z_H_ */
+

@@ -6,19 +6,20 @@
 #include <string.h>
 #include <winbase.h>
 
-
 #include <windef.h>
 #include <wingdi.h>
 #include <winuser.h>
 #include <float.h> //
 #include "a20_tk5.h"
+#include "a21_tk5us.h"
+#include "a22_tk5fs.h"
 #include "../../mb_funcs/tw_mb.h"
 #include "../../mb_funcs/tx_manual.h"
 #include "../a0_win_control.h"
 #include "../a2_setting.h"
 ////#include "a5_tk5levels.h"
 #include "a20_tk5.h"
-//#include "a21_tk5us.h"
+#include "a21_tk5us.h"
 //#include "a22_tk5fs.h"
 #include "../a3_tkTxRx.h"
 #include "../../auxs/hexdec.h"
@@ -78,6 +79,8 @@ static uint32_t tk5btnSleepCntr = 0;
 /* Визначаємо структуру, де будуть зберігатися параметри роботи
  * роботи тк2 - управління та захисту електронасоса/електродвигуна*/
 wtk5_t q5={0};
+extern tk5user_settings_t Tk5us;
+extern tk5fs_t tk5fs;
 /* Попередні значення параметрів для виводу в вікно лише тих, які змінилися*/
 //static wtk5_t q5Old={0};
 
@@ -124,42 +127,44 @@ static uint16_t x_right_panel 				= 839;
 /* Друк/розмальовка за результатами паралельного процесу,
  * викликається з вікна PPB паралельного процесу */
 
-static uint16_t y_HeatPro							=80;
-static uint16_t y_aAmperage							=100;
-static uint16_t y_bAmperage							=120;
-static uint16_t y_cAmperage							=140;
-static uint16_t y_power								=160;
-static uint16_t y_cosinus_factor					=180;
-static uint16_t y_unbalance_factor					=200;
-static uint16_t y_harm_factor						=220;
-static uint16_t y_motohours							=240;
-static uint16_t y_voltage							=260;
-static uint16_t y_frequency							=280;
+static uint16_t y_HeatPro							=0;
+static uint16_t y_aAmperage							=0;
+static uint16_t y_bAmperage							=0;
+static uint16_t y_cAmperage							=0;
+static uint16_t y_power								=00;
+static uint16_t y_cosinus_factor					=00;
+static uint16_t y_unbalance_factor					=00;
+static uint16_t y_harm_factor						=00;
+static uint16_t y_motohours							=00;
+static uint16_t y_voltage							=00;
+static uint16_t y_frequency							=00;
 
-static uint16_t y_leakAmperage_A					=300;
-static uint16_t y_GrundAmperageDistortion			=320;
-static uint16_t y_LoadType							=340;
+static uint16_t y_leakAmperage_A					=0;
+static uint16_t y_GrundAmperageDistortion			=0;
+static uint16_t y_LoadType							=0;
 
-static uint16_t y_AmperageUnbalance					=360;
-static uint16_t y_ActivePower_kW					=380;
-static uint16_t y_ReactivePower_kW					=400;
-static uint16_t y_UnbalanceLostPower_kW				=420;
-static uint16_t y_HarmonicLostPower_kW				=440;
+static uint16_t y_AmperageUnbalance					=0;
+static uint16_t y_ActivePower_kW					=0;
+static uint16_t y_ReactivePower_kW					=0;
+static uint16_t y_UnbalanceLostPower_kW				=0;
+static uint16_t y_HarmonicLostPower_kW				=0;
 
-static uint16_t y_aTotalHarmonicDistortion			=460;
-static uint16_t y_bTotalHarmonicDistortion			=480;
-static uint16_t y_cTotalHarmonicDistortion			=500;
-static uint16_t y_THDi_HarmonicAmperageDistortion	=520;
-static uint16_t y_aNegativeAmperage_A				=540;
-static uint16_t y_bNegativeAmperage_A				=560;
-static uint16_t y_cNegativeAmperage_A				=580;
-static uint16_t y_aNeutralAmperage_A				=600;
-static uint16_t y_bNeutralAmperage_A				=620;
-static uint16_t y_cNeutralAmperage_A				=640;
-static uint16_t y_sumNeutralAmperage_A				=660;
-static uint16_t y_PhaseRotation						=680;
-static uint16_t y_leakFurie							=700;
-static uint16_t y_leakFuriePhase                    =720;
+static uint16_t y_aTotalHarmonicDistortion			=0;
+static uint16_t y_bTotalHarmonicDistortion			=0;
+static uint16_t y_cTotalHarmonicDistortion			=0;
+static uint16_t y_THDi_HarmonicAmperageDistortion	=0;
+static uint16_t y_aNegativeAmperage_A				=0;
+static uint16_t y_bNegativeAmperage_A				=0;
+static uint16_t y_cNegativeAmperage_A				=0;
+static uint16_t y_aNeutralAmperage_A				=0;
+static uint16_t y_bNeutralAmperage_A				=0;
+static uint16_t y_cNeutralAmperage_A				=0;
+static uint16_t y_sumNeutralAmperage_A				=0;
+static uint16_t y_PhaseRotation						=0;
+static uint16_t y_leakFurie							=0;
+static uint16_t y_leakFuriePhase                    =0;
+
+
 
 static uint16_t yDebugMode							= 100;
 static uint16_t yAmperageAmplitude					= 150;
@@ -226,7 +231,7 @@ static HWND hTk4screenMode;
  * про завершення сесії Модбас, ініційованої з основного вікна
  * wParam-повернутий з обробника черги
  * ідентифікатор вихідного повідомлення RW5_case */
-static int f_tk5UpdateWindow(HWND hwnd, int wParam);
+static int f_tk5UpdateWindow(HWND hwnd, int wParam, int responce_status);
 /* Це функція-обгортка запуску паралельного процесу */
 static void f_desktop_tk5_session(void);
 /* Ініціалізація, щоб уникнути небажаних величин параметрів при почанковому завантаженні */
@@ -307,8 +312,8 @@ HWND f_CreateTK5Wnd(HWND hwnd){
 	/* Реєстрація класів вікон, що відкриваються багатократно
 	 * різними батьківськими вікнами */
 	hWndtk5=child5;
-//	f_RegisterTk5_US_Class(hinst_tk5);
-//	f_Registertk5fsWndClass(hinst_tk5);
+	f_RegisterTk5usWndClass(hinst_tk5);
+	f_RegisterTk5fsWndClass(hinst_tk5);
 
 
 	HMENU hMenubar = CreateMenu();
@@ -437,7 +442,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 	modbus_master_tx_msg_t mbTxMsg={0};
-	Init_YMode( PHASNOST, LOADMODE);
+//	Init_YMode( PHASNOST, LOADMODE);
 	switch(msg){
 
 		/**************************************************************************************************************
@@ -1126,29 +1131,29 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 			char wmc[256]={0};
 //			 дскриптор дочер. окна If(idCtrl==ID_combo&&code==CBN_SELCHANGE)
 			UINT NotificationCode = HIWORD(wParam);
-//			switch (NotificationCode) {
-//				/* якщо виявлено вибір користувача*/
-//				case CBN_SELCHANGE:{
-//					/* Запит - який саме номер по порядку з меню вибраний (незалежно від комбобоксу */
-//					int ItemIndex = SendMessage((HWND) lParam, (UINT) CB_GETCURSEL,  (WPARAM) 0, (LPARAM) 0);
-//					UINT idCtl=LOWORD(wParam);
-//					/* Переносимо зроблений вибір у заголовок комбобокса*/
-//					/* Ой.. Здається система це робить сама :)*/
-//					// SendMessage((HWND)lParam, CB_SETCURSEL, idCtl, 0);
-//					/* в залежності від параметру приймаємо вибрані значення параметрів*/
-//					switch(idCtl){
-//						case  IDCB_YDEBUGMODE:
-//							DebugMode =ItemIndex;
-//						break;
+			switch (NotificationCode) {
+				/* якщо виявлено вибір користувача*/
+				case CBN_SELCHANGE:{
+					/* Запит - який саме номер по порядку з меню вибраний (незалежно від комбобоксу */
+					int ItemIndex = SendMessage((HWND) lParam, (UINT) CB_GETCURSEL,  (WPARAM) 0, (LPARAM) 0);
+					UINT idCtl=LOWORD(wParam);
+					/* Переносимо зроблений вибір у заголовок комбобокса*/
+					/* Ой.. Здається система це робить сама :)*/
+					// SendMessage((HWND)lParam, CB_SETCURSEL, idCtl, 0);
+					/* в залежності від параметру приймаємо вибрані значення параметрів*/
+					switch(idCtl){
+						case  IDCB_YDEBUGMODE:
+							DebugMode =ItemIndex;
+						break;
 //						case  IDCB_YTK4SCREENMODE:
 //							Tk4screenMode=ItemIndex;
 //						break;
-//						default:{}
-//					} // switch(idCtl)
-//				}//case CBN_SELCHANGE:
-//				break;
-//				default:{}
-//			}
+						default:{}
+					} // switch(idCtl)
+				}//case CBN_SELCHANGE:
+				break;
+				default:{}
+			}
 
 
 			switch(wParam) {
@@ -1162,7 +1167,7 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 //					 /* Ставимо повідомлення в чергу на обробку   */
 					  f_set_tkqueue(
 							&tk5Queue,
-							ENABLE,
+							DISABLE,
 							hwnd,
 							0x0300,
 							&mbTxMsg,
@@ -1182,7 +1187,7 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 					 /* Ставимо повідомлення в чергу на обробку   */
 					 f_set_tkqueue(
 							&tk5Queue,
-							ENABLE,
+							DISABLE,
 							hwnd,
 							0x0000,
 							&mbTxMsg,
@@ -1201,30 +1206,33 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 //				if(tk5Process==ProcessBusy){
 				/* Забороняємо відкривати відразу декілька вікон користувача
 				 * Якщо вікно користувача вже відкрите - нічого не робимо*/
-//				   if(!IsWindow(hWndTk5usCh)){
+				   if(!IsWindow(hWndtk5usCh)){
 //					   /* Перше ніж перейти в режим налаштувань -
 //					   * відключим періодичне опитування основних параметрів */
 //							/* Зупиняємо процес обміну повідомленнями DeskTop <-> tk5 */
-							KillTimer(hwnd, p1000Timer);
+							//KillTimer(hwnd, p1000Timer);
 //							/* Чистимо чергу Модбас */
 							f_clear_tkqueue(&tk5Queue);
 //					    /* Створюємо вікно налаштувань користувача */
-//							HWND hWndTk5usCh=f_CreateTk5_US_Wnd(hwnd);
+							hWndtk5usCh=f_CreateTk5usWnd(hwnd);
 ////						snprintf(tk5LogStr,511,"ко: вкл. Налаштування користувача");
-//				   }//if(!IsWindow(usWndChild)){
+				   }//if(!IsWindow(usWndChild)){
 //				}
 //				else{
 //					snprintf (wmc,255," Процес дистанційного управління ще не запущено ");
 //				}
+
 				}//case IDM_USER_SETTINGS:{
 			break;
 			case	IDM_tk5FACILITY_SETTING:{
-				KillTimer(hwnd, p1000Timer);
+				if(!IsWindow(hWndTk5fsCh)){
+					//KillTimer(hwnd, p1000Timer);
 //							/* Чистимо чергу Модбас */
-				f_clear_tkqueue(&tk5Queue);
+					f_clear_tkqueue(&tk5Queue);
 //					    /* Створюємо вікно налаштувань користувача */
 
-//				hWndTk5fsCh=f_Createtk5fsWnd(hwnd);
+					hWndTk5fsCh=f_CreateTk5fsWnd(hwnd);
+				}
 			}
 			break;
 			case IDB_tk5DIST_EXIT:{
@@ -1268,12 +1276,14 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 				/* Кидаємо тестове повідомлення в пусту чергу */
 				f_set_tkqueue(
 						&tk5Queue,
-						ENABLE,
+						DISABLE,
 						hwnd,
 						IDB_tk5TEST_DISTANCE_CTRL,
 						&mb17,
 						600
 				);
+				f_read_usersetting_from_tk5memory(hwnd);
+				f_read_facilitysetting_from_tk5memory(hwnd);
 //				/* виставляємо прапор для обробки поверненого ТК2 повідомлення */
 //				 RW5_case=IDB_tk5TEST_DISTANCE_CTRL;
 //				 snprintf(tk5LogStr,511,"КО: Тестування дистанційного управління ");
@@ -1444,7 +1454,7 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
 						f_set_tkqueue(
 							&tk5Queue,
-							ENABLE,
+							DISABLE,
 							hwnd,
 							0xE002,
 							&mbTxMsg,
@@ -1472,7 +1482,7 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
 						f_set_tkqueue(
 								&tk5Queue,
-								ENABLE,
+								DISABLE,
 								hwnd,
 								0xE003,
 								&mbTxMsg,
@@ -1500,7 +1510,7 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
 						f_set_tkqueue(
 								&tk5Queue,
-								ENABLE,
+								DISABLE,
 								hwnd,
 								0xE004,
 								&mbTxMsg,
@@ -1520,7 +1530,7 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 				/* Ставимо повідомлення в чергу на обробку   */
 				f_set_tkqueue(
 						&tk5Queue,
-						ENABLE,
+						DISABLE,
 						hwnd,
 						0xE000,
 						&mbTxMsg,
@@ -1720,18 +1730,17 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 		}//case WM_TIMER:{
 		case VK_PSW:
 			break;
-		case VK_UPDATE_WINDOW:
-			f_tk5QPWD_RgAnswer(
+		case VK_UPDATE_WINDOW:{
+			int responce_status=f_tk5QPWD_RgAnswer(
 					RxMasterModbusStatus,
 					&mOut_tx_msg,
 					&mIn_rx_msg,
 					wParam
 			);
-			/* Windows-повідомлення, сформоване користувачам, тобто мною
-			 * у функції: f_desktop_tk_session(), файл a3tk5TxRx.
-			 * WPARAM wParam - RW_case, дентифікатор типу конкретного повідомлення */
-			f_tk5UpdateWindow(hwnd,wParam);
-			break;
+			/* * WPARAM wParam - RW_case, дентифікатор типу конкретного повідомлення */
+			f_tk5UpdateWindow(hwnd,wParam,responce_status);
+		}
+		break;
 		default:{
 			return DefWindowProc(hwnd, msg, wParam, lParam);
 		}
@@ -1739,14 +1748,18 @@ LRESULT CALLBACK WndProcTK5(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 	return 0;
 }
 
+
 extern uint16_t grid_m16[0x40];
 static int test_answer_cntr=0;
 uint16_t AmperageAmplitude	=0;
 uint16_t BAmperageAmplitude	=0;
 uint16_t CosFi	=0;
+static uint16_t PhasnostOld=0xFFFF;
+static uint16_t LoadModeOld=0xFFFF;
+static int f_tk5UpdateValuesNames(HWND hwnd);
 /* Ця функція викликається кожен раз при отриманні повідомлення в VK_UPDATE_WINDOW
  * про завершення сесії Модбас, ініційованої з основного вікна*/
-static int f_tk5UpdateWindow(HWND hwnd, int wParam){
+static int f_tk5UpdateWindow(HWND hwnd, int wParam, int responce_status){
 //   /***********************************************************************************************************
 //   * РОБОТА З ЧЕРГОЮ ПОВІДОМЛЕНЬ МОДБАС
 //   ***********************************************************************************************************/
@@ -1775,7 +1788,22 @@ static int f_tk5UpdateWindow(HWND hwnd, int wParam){
 		  }
 		}
 	}
+    if((wParam==IDB_tk5READ_USERSETTING_FROM_MEMORY)||
+   		 (wParam==IDB_tk5READ_FACILITYSETTING_FROM_MEMORY)) {
+   	 	 /* Якщо помінялася фазність або двигун/не двигун*/
+   		if(((uint16_t)tk5fs.Faznost!=PhasnostOld)||((uint16_t)Tk5us.oper_mode!=LoadModeOld)){
+   			Init_YMode(
+					(uint16_t)tk5fs.Faznost,
+					(uint16_t)Tk5us.oper_mode);
+   			/* Стираємо текст - назви і значення параметрів
+   			 * Другкуємо нові назви параметрів */
+   			f_tk5UpdateValuesNames(hwnd);
+   			  /* Центральна доска для параметрів */
 
+		    	PhasnostOld=(uint16_t)tk5fs.Faznost;
+		    	LoadModeOld=(uint16_t)Tk5us.oper_mode;
+   		}
+    }
 
 //	char pm[80]={0};
 	/* рядок динамічно для підготовки тексту у вікно*/
@@ -1791,6 +1819,7 @@ static int f_tk5UpdateWindow(HWND hwnd, int wParam){
 //		/* Якщо це той самий сеанс - нічого не робимо */
 //		return 0;
 //	}
+
 
 
 //	if(tk5ProcessState==-1){
@@ -1866,12 +1895,15 @@ static int f_tk5UpdateWindow(HWND hwnd, int wParam){
 		tk5ProcessState=0;
 		switch(wParam){
 		case 0x100:{
+
+
+
+
 			uint16_t x_value = 560;
+
+
 			char str[128]={0};
 			//m[0x3A]=dc(g->MotorHeatProcentage);	m[0x3B]=fr(g->MotorHeatProcentage);
-
-
-
 
 	   if(y_frequency != 0){
 //			grid_m16[0]	/*0*/ 						grid_m16[1]/*1*/
@@ -1983,8 +2015,8 @@ static int f_tk5UpdateWindow(HWND hwnd, int wParam){
 			RECT rectcf = {rect.left+x_value, rect.top+y_cosinus_factor,rect.left+839+140,rect.top+y_cosinus_factor+25};
 
 
-			snprintf (str,sizeof(str),"%3d",
-			grid_m16[0x12]/*dc(g->PowerFactor_pro)*/
+			snprintf (str,sizeof(str),"%3d.%04d",
+			grid_m16[0x12]/*dc(g->PowerFactor_pro)*/,grid_m16[0x16]
 			);
 			DrawText(hDCr, str, 19, &rectcf, DT_SINGLELINE|DT_LEFT|DT_TOP);
 			memset(&str,0,sizeof(str));
@@ -2486,11 +2518,10 @@ int f_tk5UpdateStat(
 }
 
 
-
 /* Друк/розмальовка за результатами паралельного процесу,
  * викликається з вікна PPB паралельного процесу */
 static void Init_YMode(uint16_t Phasnost, uint16_t LoadMode){
-	/* Три фази навантаження всяке*/
+	/* Трифазний двигун */
 	if((Phasnost==3)&&(LoadMode==0)){
 		y_HeatPro							 =80;
 		y_aAmperage							=100;
@@ -2529,6 +2560,7 @@ static void Init_YMode(uint16_t Phasnost, uint16_t LoadMode){
   	  y_leakFurie							=700;
   	  y_leakFuriePhase                    	=720;
 	}
+	/* Однофазний двигун */
 	else if ((Phasnost==1)&&(LoadMode==0)){
 		y_HeatPro							 =80;
 		y_aAmperage							=0;
@@ -2567,5 +2599,281 @@ static void Init_YMode(uint16_t Phasnost, uint16_t LoadMode){
 	  y_leakFurie							=0;
 	  y_leakFuriePhase                    	=0;
 	}
+	/* Трифазне енергопостачання */
+	else if((Phasnost==3)&&(LoadMode==1)){
+		y_HeatPro							 =0;
+		y_aAmperage							=100;
+		y_bAmperage							=120;
+		y_cAmperage							=140;
+		y_power								=160;
+		y_cosinus_factor					=180;
+		y_unbalance_factor					=0;
+		y_harm_factor						=220;
+		y_motohours							=240;
+		y_voltage							=260;
+		y_frequency							=280;
 
+		y_leakAmperage_A					=0;
+		y_GrundAmperageDistortion			=0;
+		y_LoadType							=340;
+
+  	  y_AmperageUnbalance					=360;
+  	  y_ActivePower_kW						=380;
+  	  y_ReactivePower_kW					=400;
+  	  y_UnbalanceLostPower_kW				=0;
+  	  y_HarmonicLostPower_kW				=0;
+
+  	  y_aTotalHarmonicDistortion			=460;
+  	  y_bTotalHarmonicDistortion			=480;
+  	  y_cTotalHarmonicDistortion			=500;
+  	  y_THDi_HarmonicAmperageDistortion		=520;
+  	  y_aNegativeAmperage_A					=540;
+  	  y_bNegativeAmperage_A					=560;
+  	  y_cNegativeAmperage_A					=580;
+  	  y_aNeutralAmperage_A					=600;
+  	  y_bNeutralAmperage_A					=620;
+  	  y_cNeutralAmperage_A					=640;
+  	  y_sumNeutralAmperage_A				=660;
+  	  y_PhaseRotation						=680;
+  	  y_leakFurie							=0;
+  	  y_leakFuriePhase                    	=0;
+	}
+	/* Однофазне енергопостачання */
+	else if ((Phasnost==1)&&(LoadMode==1)){
+		y_HeatPro							=0;
+		y_aAmperage							=0;
+		y_bAmperage							=0;
+		y_cAmperage							=105;
+		y_power								=130;
+		y_cosinus_factor					=155;
+		y_unbalance_factor					=0;
+		y_harm_factor						=180;
+		y_motohours							=0;
+		y_voltage							=230;
+		y_frequency							=255;
+
+		y_leakAmperage_A					=0;
+		y_GrundAmperageDistortion			=0;
+		y_LoadType							=0;
+
+	  y_AmperageUnbalance					=0;
+	  y_ActivePower_kW						=280;
+	  y_ReactivePower_kW					=305;
+	  y_UnbalanceLostPower_kW				=0;
+	  y_HarmonicLostPower_kW				=0;
+
+	  y_aTotalHarmonicDistortion			=0;
+	  y_bTotalHarmonicDistortion			=0;
+	  y_cTotalHarmonicDistortion			=355;
+	  y_THDi_HarmonicAmperageDistortion		=0;
+	  y_aNegativeAmperage_A					=0;
+	  y_bNegativeAmperage_A					=0;
+	  y_cNegativeAmperage_A					=380;
+	  y_aNeutralAmperage_A					=0;
+	  y_bNeutralAmperage_A					=0;
+	  y_cNeutralAmperage_A					=405;
+	  y_sumNeutralAmperage_A				=0;
+	  y_PhaseRotation						=0;
+	  y_leakFurie							=0;
+	  y_leakFuriePhase                    	=0;
+	}
+
+
+}
+
+
+static int f_tk5UpdateValuesNames(HWND hwnd){
+	HDC hDC; // создаём дескриптор ориентации текста на экране
+	RECT rect; // стр-ра, определяющая размер клиентской области
+	/*малюємо заново*/
+	hDC= GetDC(hwnd);
+	GetClientRect(hwnd, &rect);  	// получаем ширину и высоту области для рисования
+	  	RECT rectwhite = {rect.left+190+1,rect.top+70,rect.left+550,rect.top+700-1};
+	  	FillRect(hDC, &rectwhite, (HBRUSH)(COLOR_WINDOW+1));
+		//Замальовуємо область справа центру синім
+		RECT rectblue = {rect.left+550,rect.top+70,rect.left+819,rect.top+700-1};
+		FillRect(hDC, &rectblue, (HBRUSH)29);
+	/* Обновляємо координату рядків */
+
+		/* Виводимо нові назви параметрів */
+	if(y_HeatPro!=0){
+		RECT rect0 = {rect.left+210, rect.top+y_HeatPro,rect.left+1000,rect.top+y_HeatPro+25};
+		             //1234567890123456789012345678901234
+		DrawText(hDC, "Ступінь нагріву електродвигуна, %", 34, &rect0, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_aAmperage!=0){
+		RECT rectfa = {rect.left+210, rect.top+y_aAmperage,rect.left+1000,rect.top+y_aAmperage+25};
+		DrawText(hDC, "Струм фази А, А                ", 32, &rectfa, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_bAmperage!=0){
+		RECT rectfb = {rect.left+210, rect.top+y_bAmperage,rect.left+1000,rect.top+y_bAmperage+25};
+		DrawText(hDC, "Струм фази В, А                ", 32, &rectfb, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_cAmperage!=0){
+		RECT rectfc = {rect.left+210, rect.top+y_cAmperage,rect.left+1000,rect.top+y_cAmperage+25};
+		DrawText(hDC, "Струм фази С, А                ", 32, &rectfc, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_power!=0){
+		RECT rectpw = {rect.left+210, rect.top+y_power,rect.left+1000,rect.top+y_power+25};
+		DrawText(hDC, "Потужність, кВт                ", 32, &rectpw, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_cosinus_factor!=0){
+		RECT rectcf = {rect.left+210, rect.top+y_cosinus_factor,rect.left+1000,rect.top+y_cosinus_factor+25};
+		DrawText(hDC, "Коефіцієнт потужності(косинус фi)", 34, &rectcf, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_unbalance_factor!=0){
+		RECT rectub = {rect.left+210, rect.top+y_unbalance_factor,rect.left+1000,rect.top+y_unbalance_factor+25};
+		DrawText(hDC, "Коефіцієнт потужності(асиметрія)", 34, &rectub, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_harm_factor!=0){
+
+		RECT rectih = {rect.left+210, rect.top+y_harm_factor,rect.left+1000,rect.top+y_harm_factor+25};
+		DrawText(hDC, "Коефіцієнт потужності(гармоніки) ", 34, &rectih, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_motohours!=0){
+		RECT rectmh = {rect.left+210, rect.top+y_motohours,rect.left+1000,rect.top+y_motohours+25};
+		DrawText(hDC, "Мотогодини                       ", 34, &rectmh, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_voltage!=0){
+		RECT rectu = {rect.left+210, rect.top+y_voltage,rect.left+1000,rect.top+y_voltage+25};
+		DrawText(hDC, "Напруга                          ", 34, &rectu, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_frequency!=0){
+		RECT rectff = {rect.left+210, rect.top+y_frequency,rect.left+1000,rect.top+y_frequency+25};
+		DrawText(hDC, "Частота                          ", 34, &rectff, DT_SINGLELINE|DT_LEFT|DT_TOP);
+
+	}
+
+	if(y_leakAmperage_A!=0){
+		//			leakAmperage_A
+					RECT rectla = {rect.left+210, rect.top+y_leakAmperage_A,rect.left+1000,rect.top+y_leakAmperage_A+25};
+					DrawText(hDC, "Струм, витік на землю, А", 25, &rectla, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_GrundAmperageDistortion!=0){
+
+		//			GrundAmperageDistortion
+					RECT rectad = {rect.left+210, rect.top+y_GrundAmperageDistortion,rect.left+1000,rect.top+y_GrundAmperageDistortion+25};
+					DrawText(hDC, "Витік струму, %", 16, &rectad, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_LoadType!=0){
+
+					/* >LoadType - Тип навантаження - індуктивне/активне/ємнісне   */
+					RECT recttl = {rect.left+210, rect.top+y_LoadType,rect.left+1000,rect.top+y_LoadType+25};
+					DrawText(hDC, "Тип навантаження", 17, &recttl, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_PhaseRotation!=0){
+
+					/*(uint16_t)(g->PhaseRotation)*/
+					RECT rectak = {rect.left+210, rect.top+y_PhaseRotation,rect.left+1000,rect.top+y_PhaseRotation+25};
+					DrawText(hDC, "Послідовність фаз", 18, &rectak, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_cosinus_factor!=0){
+					RECT rectcf1 = {rect.left+210, rect.top+y_cosinus_factor,rect.left+1000,rect.top+y_cosinus_factor+25};
+					DrawText(hDC, "Коефіцієнт потужності(косинус фі), %", 37, &rectcf1, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_unbalance_factor!=0){
+					RECT rectub1 = {rect.left+210, rect.top+y_unbalance_factor,rect.left+839+140,rect.top+y_unbalance_factor+25};
+					DrawText(hDC, "Коефіцієнт потужності(асиметрія), %", 36, &rectub1, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_harm_factor!=0){
+					RECT rectfh = {rect.left+210, rect.top+y_harm_factor,rect.left+839+140,rect.top+y_harm_factor+25};
+					DrawText(hDC, "Коефіцієнт потужності(гармоніки), %", 36, &rectfh, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_ActivePower_kW!=0){
+					RECT rectap = {rect.left+210, rect.top+y_ActivePower_kW,rect.left+839+140,rect.top+y_ActivePower_kW+25};
+					DrawText(hDC, "Потужність активна, кВт", 24, &rectap, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_ReactivePower_kW!=0){
+					/* Реактивна потужність*/
+					RECT rectrap = {rect.left+210, rect.top+y_ReactivePower_kW,rect.left+839+140,rect.top+y_ReactivePower_kW+25};
+					DrawText(hDC, "Потужність реактивна, кВт", 26, &rectrap, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_UnbalanceLostPower_kW!=0){
+					/* Потужність втрачена електродвигуном внаслідок асиметрії струму (лише для електродвигуна)*/
+					RECT rectrap2 = {rect.left+210, rect.top+y_UnbalanceLostPower_kW,rect.left+839+140,rect.top+y_UnbalanceLostPower_kW+25};
+					DrawText(hDC, "Потужність, втрати через асиметрію, кВт", 40, &rectrap2, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_HarmonicLostPower_kW!=0){
+					/* Потужність, втрачена електродвигуном внаслідок несинусоїдальності струму */
+					RECT rectrap3 = {rect.left+210, rect.top+y_HarmonicLostPower_kW,rect.left+839+140,rect.top+y_HarmonicLostPower_kW+25};
+
+					DrawText(hDC, "Потужність, втрати через гармоніки, кВт", 40, &rectrap3, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_power!=0){
+					/*kvatt_t	ActivePower_kW*/
+					RECT rectap1 = {rect.left+210, rect.top+y_power,rect.left+839+140,rect.top+y_power+25};
+					DrawText(hDC, "Потужність активна, кВт", 24, &rectap1, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_aTotalHarmonicDistortion!=0){
+
+					/*Зглажені параметри ефективності мережі 					                    */
+					/*Коефіцієнт нелінійних спотворень по струму у кожній фазі                      */
+					//aTotalHarmonicDistortion
+					RECT rectah = {rect.left+210, rect.top+y_aTotalHarmonicDistortion,rect.left+839+140,rect.top+y_aTotalHarmonicDistortion+25};
+					DrawText(hDC, "Коефіцієнт нелінійних спотворень, фаза А, %", 44, &rectah, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_bTotalHarmonicDistortion!=0){
+					//bTotalHarmonicDistortion
+					RECT rectbh = {rect.left+210, rect.top+y_bTotalHarmonicDistortion,rect.left+839+140,rect.top+y_bTotalHarmonicDistortion+25};
+					DrawText(hDC, "Коефіцієнт нелінійних спотворень, фаза В, %", 44, &rectbh, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_cTotalHarmonicDistortion!=0){
+					//cTotalHarmonicDistortion
+					RECT rectch = {rect.left+210, rect.top+y_cTotalHarmonicDistortion,rect.left+839+140,rect.top+y_cTotalHarmonicDistortion+25};
+					DrawText(hDC, "Коефіцієнт нелінійних спотворень, фаза С, %", 44, &rectch, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_THDi_HarmonicAmperageDistortion!=0){
+					//Коефіцієнт нелінійних спотворень по струму узагальнений  (макс)
+		//			/*procentf_t THDi_HarmonicAmperageDistortion*/
+					RECT rectth = {rect.left+210, rect.top+y_THDi_HarmonicAmperageDistortion,rect.left+839+140,rect.top+y_THDi_HarmonicAmperageDistortion+25};
+					DrawText(hDC, "Коефіцієнт нелінійних спотворень, %", 36, &rectth, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_aNegativeAmperage_A!=0){
+					RECT rectan = {rect.left+210, rect.top+y_aNegativeAmperage_A,rect.left+839+140,rect.top+y_aNegativeAmperage_A+25};
+					DrawText(hDC, "Струми негативних гармонік, фаза А, А", 38, &rectan, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_bNegativeAmperage_A!=0){
+		//			bNegativeAmperage_A*/
+					RECT rectbn = {rect.left+210, rect.top+y_bNegativeAmperage_A,rect.left+839+140,rect.top+y_bNegativeAmperage_A+25};
+					DrawText(hDC, "Струми негативних гармонік, фаза В, А", 38, &rectbn, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_cNegativeAmperage_A!=0){
+		//			amperf_t cNegativeAmperage_A*/
+					RECT rectcn = {rect.left+210, rect.top+y_cNegativeAmperage_A,rect.left+839+140,rect.top+y_cNegativeAmperage_A+25};
+					DrawText(hDC, "Струми негативних гармонік, фаза С, А", 38, &rectcn, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_aNeutralAmperage_A!=0){
+					RECT rectnaa = {rect.left+210, rect.top+y_aNeutralAmperage_A,rect.left+839+140,rect.top+ y_aNeutralAmperage_A+25};
+					DrawText(hDC, "Струми нейтральних гармонік, фаза А, А", 38, &rectnaa, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_bNeutralAmperage_A!=0){
+		//			bNeutralAmperage_A
+					RECT rectnab = {rect.left+210, rect.top+ y_bNeutralAmperage_A,rect.left+839+140,rect.top+ y_bNeutralAmperage_A+25};
+					DrawText(hDC, "Струми нейтральних гармонік, фаза В, А", 38, &rectnab, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_cNeutralAmperage_A!=0){
+		//			cNeutralAmperage_A
+					RECT rectnac = {rect.left+210, rect.top+ y_cNeutralAmperage_A,rect.left+839+140,rect.top+y_cNeutralAmperage_A+25};
+					DrawText(hDC, "Струми нейтральних гармонік, фаза С, А", 38, &rectnac, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_sumNeutralAmperage_A!=0){
+		//			sumNeutralAmperage_A
+					RECT rectnat = {rect.left+210, rect.top+ y_sumNeutralAmperage_A,rect.left+839+140,rect.top+ y_sumNeutralAmperage_A+25};
+					DrawText(hDC, "Струми нейтральних гармонік разом, А", 37, &rectnat, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_AmperageUnbalance!=0){						            // 1234567890123456789012345678901234567890123456789
+					RECT rectnkf = {rect.left+210, rect.top+ y_AmperageUnbalance,rect.left+839+140,rect.top+ y_AmperageUnbalance+25};
+					DrawText(hDC, "Перекос фаз, %", 15, &rectnkf, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_leakFurie!=0){
+					RECT rectnlf = {rect.left+210, rect.top+ y_leakFurie,rect.left+839+140,rect.top+ y_leakFurie+25};
+					            // 1234567890123456789012345678901234567890123456789
+					DrawText(hDC, "Витік струму на землю(Ф), А", 28, &rectnlf, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	if(y_leakFuriePhase!=0){
+					RECT rectnlfp = {rect.left+210, rect.top+ y_leakFuriePhase,rect.left+839+140,rect.top+ y_leakFuriePhase+25};
+					DrawText(hDC, "Фаза витоку(Ф)", 15, &rectnlfp, DT_SINGLELINE|DT_LEFT|DT_TOP);
+	}
+	ReleaseDC(hwnd, hDC);
+	return 0;
 }

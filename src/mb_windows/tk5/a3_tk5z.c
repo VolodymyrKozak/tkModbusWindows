@@ -23,11 +23,8 @@ extern   queue_t tk5Queue;
 extern FILE *fp_tk5LogFile;
 
 extern HWND hWndtk5;
-// 0x0205	Уставка защиты от токовой перегрузки, А	10.0 –  600.0	Iн	arr[2]
-extern float2_t Itk5_Max;
-//0x0206	Уставка минимально допустимого тока (недогрузки), А 	10.0–600.0 Iсх	arr[3]
-extern float2_t Itk5_Min;
-
+extern tk5user_settings_t Tk5us;
+extern tk5fs_t tk5fs;
 /* Структура параметрів заводських налаштувань */
 extern d_type_t q;
 //extern tk2_fs_t fs;
@@ -72,7 +69,7 @@ extern uint16_t Tk4screenMode;
 extern uint16_t AmperageAmplitude;
 extern uint16_t BAmperageAmplitude;
 extern uint16_t CosFi;
-uint32_t f_tk5QPWD_RgAnswer(
+int32_t f_tk5QPWD_RgAnswer(
 		modbus_status_t ms,
 		modbus_master_tx_msg_t *mb_tx_msg,
 		modbus_master_rx_msg_t *mb_rx_msg,
@@ -191,38 +188,75 @@ uint32_t f_tk5QPWD_RgAnswer(
         			snprintf (user_msga,USER_SESSAGE_SIZE," Отримане від ТК2 значення ЧИСЛА СТАРТІВ за 10хв підозріле");
         		}
         	}
-//        	//ЗАТРИМКА ПУСКУ ЕД ПО РІВНЮ													0Х0214	0Х1006   4..
-//        	//#define ID_EDIT_ONSENSORMOTORDELAY					    225
-//        	else if (incase==0x0214){fs.fsOnSensorMotorDelay=value;}
-//        	//ЗАТРИМКА ЗУПИНКИ ЕД ПО РІВНЮ													0Х0215	0Х1007   12
-//        	//#define ID_EDIT_OFFSENSORMOTORDELAY						250
-//        	else if (incase==0x0215){fs.fsOffSensorMotorDelay=value;}
-//        	//ЗАТРИМКА ВІДНОВЛЕННЯ РОБОТИ ДАТЧИКА «СУХОГО ХОДУ» ПІСЛЯ АВАРІЇ «СУХОГО ХОДУ»	0Х0217	0Х1012   13
-//        	//#define ID_EDIT_AFTRERDRYMOVEDELAY						275
-//        	else if (incase==0x0217){fs.fsAftrerDryMoveDelay=value;}
-//        	//ВИБІР КОНТР ОПОРУ ІЗОЛЯЦІЇ/ПЛ.ПУСК                             ARR[26]		0X0219	0X101A	 0/1?
-//        	//#define ID_CMB_INSUL_SOFTSTART_OPTION					325
-//        	else if (incase==0x0219){fs.fsInsul_SoftStart_Option=value;}
-//        	//УСТАВКА ДЛЯ КОНТРОЛЯ ИЗОЛЯЦИИ ДВИГАТЕЛЯ
-//        	//ПРИ ОТСУТСТВИИ ПЛАВНОГО ПУСКА  											    0X020D	0Х1015   381
-//        	//#define ID_EDIT_INSUL_WITHOUTSOFTSTART					350
-//        	else if (incase==0x020D){fs.fsInsul_WithoutSoftStart=value;}
-//        	//УСТАВКА ПОРОГА СРАБАТЫВАНИЯ ДАТЧИКА УРОВНЯ  					arr21		    0Х0213	0Х1016   1001
-//        	//#define ID_EDIT_LEVELSENSORLIMIT						425
-//        	else if (incase==0x0213){fs.fsLevelSensorLimit=value;}
-//        	//УСТАВКА ДЛЯ ЗАПУСКА ДВИГАТЕЛЯ С ПЛАВНЫМ ПУСКОМ                arr[28]         0x021A  0x101C    700 код АЦП
-//        	//#define ID_EDIT_SOFTSTART_PRM							450
-//        	else if (incase==0x021A){fs.fsSoftStart_prm=value;}
-//        	//ТИПОРОЗМІР СТАНЦІЇ															0X0208	0Х1008    3
-//        	//#define ID_CMB_TYPOROZMIR								475
-////        	else if (incase==0x0208){fs.fsTyporozmir=value;} Зчитується вище
-//        	//ФАЗНІСТЬ																		0Х020А	0X101E    3
-//        	//#define ID_CMB_PHASNOST								500
-//        	else if (incase==0x020A){
-//        		fs.fsPhasnost=value;}
-//
+        	/* якщо читали налаштування користувача з памяті контролера */
+        	else if(incase==IDB_tk5READ_USERSETTING_FROM_MEMORY){
+    			uint16_t value_i=0;
+    			value_i = mb_rx_msg->msg[3+0x00] * 0x100 + mb_rx_msg->msg[3+0x01];
+    			Tk5us.oper_mode = (oper_mode_t) value_i;
+    			/* i тут підуть усі інші налаштування */
+        	}
+        	else if(incase==IDB_tk5READ_FACILITYSETTING_FROM_MEMORY){
+    			uint16_t value_i=0;
+
+    			/* i тут підуть усі інші налаштування */
+    			uint16_t dec=0;
+    			uint16_t fra=0;
+//    			float amperageAclbr; 	// 0х2000
+    			dec=mb_rx_msg->msg[3+0x00]*0x100+mb_rx_msg->msg[3+ 0x01];
+    			fra=mb_rx_msg->msg[3+0x02]*0x100+mb_rx_msg->msg[3+ 0x03];
+    			tk5fs.amperageAclbr=(float)dec+(float)fra/10000.f;
+
+//    			float clbr_iA;			// 0х2002
+    			dec=mb_rx_msg->msg[3+0x04]*0x100+mb_rx_msg->msg[3+ 0x05];
+    			fra=mb_rx_msg->msg[3+0x06]*0x100+mb_rx_msg->msg[3+ 0x07];
+    			tk5fs.clbr_iA=(float)dec+(float)fra/10000.f;
+
+//    			float amperageBclbr; 	// 0х2004
+    			dec=mb_rx_msg->msg[3+0x08]*0x100+mb_rx_msg->msg[3+ 0x09];
+    			fra=mb_rx_msg->msg[3+0x0A]*0x100+mb_rx_msg->msg[3+ 0x0B];
+    			tk5fs.amperageBclbr=(float)dec+(float)fra/10000.f;
+
+//    			float clbr_iB;			// 0х2006
+    			dec=mb_rx_msg->msg[3+0x0C]*0x100+mb_rx_msg->msg[3+ 0x0D];
+    			fra=mb_rx_msg->msg[3+0x0E]*0x100+mb_rx_msg->msg[3+ 0x0F];
+    			tk5fs.clbr_iB=(float)dec+(float)fra/10000.f;
+
+//    			float amperageCclbr; 	// 0х2008
+    			dec=mb_rx_msg->msg[3+0x10]*0x100+mb_rx_msg->msg[3+ 0x11];
+    			fra=mb_rx_msg->msg[3+0x12]*0x100+mb_rx_msg->msg[3+ 0x13];
+    			tk5fs.amperageCclbr=(float)dec+(float)fra/10000.f;
+
+//    			float clbr_iC;			// 0х200A
+    			dec=mb_rx_msg->msg[3+0x14]*0x100+mb_rx_msg->msg[3+ 0x15];
+    			fra=mb_rx_msg->msg[3+0x16]*0x100+mb_rx_msg->msg[3+ 0x17];
+    			tk5fs.clbr_iC=(float)dec+(float)fra/10000.f;
+
+//    			fSet.voltageCclbr		//0x200C
+    			dec=mb_rx_msg->msg[3+0x18]*0x100+mb_rx_msg->msg[3+ 0x19];
+    			fra=mb_rx_msg->msg[3+0x1A]*0x100+mb_rx_msg->msg[3+ 0x1B];
+    			tk5fs.voltageCclbr=(float)dec+(float)fra/10000.f;
+
+//    			float clbr_uC;			// 0х200E
+    			dec=mb_rx_msg->msg[3+0x1C]*0x100+mb_rx_msg->msg[3+ 0x1D];
+    			fra=mb_rx_msg->msg[3+0x1E]*0x100+mb_rx_msg->msg[3+ 0x1F];
+    			tk5fs.clbr_uC=(float)dec+(float)fra/10000.f;
+
+//    			uint16_t DeviceMode;     //0x1010 Типорозмір контролера 1...5
+    			uint16_t value =0;
+    			value=mb_rx_msg->msg[3+0x20]*0x100+mb_rx_msg->msg[3+0x21];
+    			tk5fs.DeviceMode   =value;
+
+//    			uint16_t Faznost;		 //0x1011
+    			value=mb_rx_msg->msg[3+0x22]*0x100+mb_rx_msg->msg[3+0x23];
+    			tk5fs.Faznost   =value;
+
+
+
+        	}
+
 
         	else{}
+        	tk5ProcessState=1;
 		}
 		/* Не 0х03 і не 0х83 */
 		else{
@@ -253,18 +287,58 @@ uint32_t f_tk5QPWD_RgAnswer(
 				uint16_t regValue_Rx = mb_rx_msg->msg[4]*0x100 + mb_rx_msg->msg[5];
 				if((regNumber_Tx==regNumber_Rx)&&(regValue_Tx==regValue_Rx)){
 					tk5ProcessState=1;
+
 				}
 				else{
 					snprintf (user_msga,USER_SESSAGE_SIZE," Помилка Модбас запису регістра RTx");
 					tk5ProcessState=-1;
 				}
 	    }
+
         else{
         	snprintf (user_msga,USER_SESSAGE_SIZE," Відповідь не відповідає формату Модбас");
         	tk5ProcessState=-1;
 		}
 		}//case 0x06:{
 		break;
+		case 0x10:{
+		    if((mb_tx_msg->msg[1]==0x10)&&(mb_rx_msg->msg[1]==0x90)){
+		    	if(mb_rx_msg->msg[2]==0x02){
+		    		snprintf (user_msga,USER_SESSAGE_SIZE," Запис регістрiв не підтримується ");
+		    		tk5ProcessState=-1;
+		    	}
+		    	else{
+		    		snprintf (user_msga,USER_SESSAGE_SIZE," Помилка протоколу Модбас              ");
+		    		tk5ProcessState=-1;
+		    	}
+
+		    }
+		    /* Якщо це був запис регістрів блоком  */
+		    else if ((mb_tx_msg->msg[1]==0x10)&&(mb_rx_msg->msg[1]==0x10)){
+				    uint16_t txStartingAddress = mb_tx_msg->msg[2]*0x100 + mb_tx_msg->msg[2];
+				    uint16_t rxStartingAddress = mb_rx_msg->msg[2]*0x100 + mb_rx_msg->msg[2];
+					uint16_t txQuantityOfRegisters = mb_tx_msg->msg[4]*0x100 + mb_tx_msg->msg[5];
+					uint16_t rxQuantityOfRegisters = mb_rx_msg->msg[4]*0x100 + mb_rx_msg->msg[5];
+
+
+					if((txStartingAddress == rxStartingAddress)&&
+							(txQuantityOfRegisters == rxQuantityOfRegisters)){
+						/* Все Ок       */
+						tk5ProcessState=1;
+					}
+					else{
+						snprintf (user_msga,USER_SESSAGE_SIZE," Помилка Модбас запису регістрів блоком RTx");
+						tk5ProcessState=-1;
+					}
+		    }
+
+	        else{
+	        	snprintf (user_msga,USER_SESSAGE_SIZE," Відповідь не відповідає формату Модбас");
+	        	tk5ProcessState=-1;
+			}
+		}
+		break;
+
 		case 0x11:{
 			memset(&user_msga,0,sizeof(user_msg5));
 			  tk5ProcessState=2;
@@ -283,6 +357,7 @@ uint32_t f_tk5QPWD_RgAnswer(
 	//        Additional Data
 		}
 		break;
+
 		case 0x91:{
 	    	  char str[256]={0};
 	    	  snprintf (str,sizeof(str)," a3_tk5z.c: Отримано повідомлення про помилку від сервера");
@@ -303,7 +378,8 @@ uint32_t f_tk5QPWD_RgAnswer(
     }
     /* Це - розблокування роботи черги, раком поки що..*/
     mb_rx_msg->length=0;
-    return AnswerOkCntr;
+    /* Повертаємо стан обробки відповіді від контролера*/
+    return tk5ProcessState;
 }
 
 
@@ -379,6 +455,44 @@ void f_tk5Logging(char *str, size_t n_str){
 
 }
 
+int f_read_facilitysetting_from_tk5memory(HWND hwnd){
+	modbus_master_tx_msg_t mbTxMsg={0};
+	mbTxMsg.msg[0]=0x01;
+	mbTxMsg.msg[1]=0x03;
+	//(rAddress==0x2020)&&(NumberOfRegs==0x20)){
+	mbTxMsg.msg[2]=0x20;
+	mbTxMsg.msg[3]=0x20;
+	mbTxMsg.msg[4]=0x00;
+	mbTxMsg.msg[5]=0x20;
+	mbTxMsg.length=6;
+	/* Ставимо повідомлення в чергу на обробку   */
+	f_set_tkqueue(
+			&tk5Queue,
+			DISABLE,
+			hwnd,
+			IDB_tk5READ_FACILITYSETTING_FROM_MEMORY,
+			&mbTxMsg,
+			1000
+		);
+}
 
-
-
+int f_read_usersetting_from_tk5memory(HWND hwnd){
+	modbus_master_tx_msg_t mbTxMsg={0};
+	mbTxMsg.msg[0]=0x01;
+	mbTxMsg.msg[1]=0x03;
+	//(rAddress==0x2020)&&(NumberOfRegs==0x20)){
+	mbTxMsg.msg[2]=0x20;
+	mbTxMsg.msg[3]=0x00;
+	mbTxMsg.msg[4]=0x00;
+	mbTxMsg.msg[5]=0x20;
+	mbTxMsg.length=6;
+	/* Ставимо повідомлення в чергу на обробку   */
+	f_set_tkqueue(
+			&tk5Queue,
+			DISABLE,
+			hwnd,
+			IDB_tk5READ_USERSETTING_FROM_MEMORY,
+			&mbTxMsg,
+			1000
+		);
+}

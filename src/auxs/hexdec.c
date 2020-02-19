@@ -39,16 +39,146 @@ int f_valueEditMessageBox(int err){
  * 3- якщо дробна частина більша за 0xFFFF
  * 4- пустий рядок
  * */
+int f_checkEditWCHAR(HWND hwndCntr, HWND hwnd, float2_t *f2){
+	int err= -100;
+	int n_strValue1 = 0xFFFF;
+
+	TCHAR tChar[40]={0};
+	n_strValue1=GetWindowTextA(
+			hwndCntr,
+			tChar,
+			40-1
+	);
+
+	if(n_strValue1==0){err=4;}
+	else {
+
+		err =f_strint_to_valueWCHAR(
+					tChar,
+					n_strValue1,
+					f2
+					);
+		n_strValue1=0;
+
+
+	}
+	return err;
+}
+/* Ця функція перетворює рядок символів в число з плаваючою крапкою в форматі
+ * float2_t або повертає код помилки
+ * string - рядок символів
+ * n_string - розмір рядка символів, число перших символів, які беремо до уваги
+ * float2 - число з плаваючою точкою, що повертається в разі успіху
+ * повертається:
+ * 0, якщо успіх,
+ * 1- якщо зустріли недозволений символ
+ * 2- якщо ціла частина більша за 0хFFFF
+ * 3- якщо дробна частина більша за 0xFFFF
+ * */
+
+int f_strint_to_valueWCHAR(WCHAR* wString, uint8_t n_string, float2_t *float2){
+	int err=0;
+	uint8_t  dotFlag=0;
+	uint32_t nDec=0;
+	uint64_t nFrc=0;
+	uint32_t  iFrc=1000;
+	static float2_t r={0};
+	if(n_string==0){return -4;}
+	for(uint8_t i=0;i<n_string;i++){
+		uint16_t wch=wString[i];
+		if(wch==0){break;}
+		uint8_t ch[2]={0};
+		ch[0]=wch % 0x100;
+		ch[1]=wch / 0x100;
+		for(uint8_t i=0;i<2;i++){
+			uint8_t chi=ch[i];
+			if(chi==0){err=0;break;}
+			if((chi<0x30)||(chi>0x39)){
+				if(chi=='.'){
+					dotFlag=1;
+				}
+				else if(chi==' '){;}
+				else{
+					err=1;/* error - недозволений символ */
+				}
+			}
+			/* чергова цифра не крапка */
+			else{
+
+				/* це ціла частина?*/
+				if(dotFlag==0){
+					uint16_t d=chi-0x30;
+					nDec=nDec*10+(uint32_t)d;
+					if(nDec>0xFFFFF){
+						err=2;/*Надто велика ціла частина*/
+					}
+				}
+				/*це дробна частина */
+				else{
+					uint8_t f=chi-0x30;
+					nFrc=nFrc+iFrc*f;
+					if(iFrc>1){
+						iFrc=iFrc/10;
+					}
+					else{
+						iFrc=0;
+					}
+
+					if(nFrc>0xFFFFF){
+						err=3;/*Надто велика дробна частина*/
+					}
+				}
+			}
+		}
+	}
+
+	if(err==0){
+		r.d=nDec;
+		if(nFrc>10000){
+			r.f=nFrc / 10000;
+		}
+		else{
+			r.f=(uint16_t)nFrc;
+		}
+		r.floatf = (float)r.d+(float)r.f / 10000.0f;
+		(*float2)=r;
+	}
+	return err;
+}
+/*Ця функція зчитує число з плаваючою точкою з заданого EditBar
+ * id_LABEL - ідентифікатор EditBar,
+ * hwnd -вікно, де цей EditBar
+ * f2 - показчик на число з плаваючою точкою, яке повертається
+ *  * повертається:
+ * 0, якщо успіх,
+ * 1- якщо зустріли недозволений символ
+ * 2- якщо ціла частина більша за 0хFFFF
+ * 3- якщо дробна частина більша за 0xFFFF
+ * 4- пустий рядок
+ * */
 int f_checkEdit(int id_LABEL, HWND hwnd, float2_t *f2){
 	int err= -100;
-	int n_strValue1 = GetWindowTextLength(GetDlgItem(hwnd, id_LABEL));
+	int n_strValue1 = 0xFFFF;
+//	GetWindowTextLength(hwndEdit)
+	n_strValue1=GetWindowTextLengthA(GetDlgItem(hwnd, id_LABEL));
 //                        	int err= GetLastError();
 	if(n_strValue1==0){
-		err=4;
+		//Use the (wchar_t / TCHAR) buffer only:
+		TCHAR LPTstr[100]={0};
+		int aa = GetWindowText(
+				GetDlgItem(hwnd, id_LABEL),       // дескриптор окна или элемента
+		                 	// управления с текстом
+				LPTstr, 	// адрес буфера для текста
+				100			// максимальное число символов 		                 // для копирования
+		);
+		if(aa==0){err=4;}
+		else{
+
+		}
 	}
 	else {
  		char str[256]={0};
-		GetDlgItemText(hwnd, id_LABEL, str, n_strValue1+1);
+		GetDlgItemTextA(hwnd, id_LABEL, str, n_strValue1+1);
 
 		err = f_strint_to_value(
 					str,
@@ -132,6 +262,7 @@ int f_strint_to_value(char *string, uint8_t n_string, float2_t *float2){
 	}
 	return err;
 }
+
 /* Ця функція тестує рядок байтів ec16s на наявність числа до 0xFFFF
  * якщо довжина рядка <6 байт
  * і це послідовність hex- цифр в діапазоні від 0 до F
