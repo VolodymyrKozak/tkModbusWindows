@@ -1757,9 +1757,11 @@ uint16_t CosFi	=0;
 static uint16_t PhasnostOld=0xFFFF;
 static uint16_t LoadModeOld=0xFFFF;
 static int f_tk5UpdateValuesNames(HWND hwnd);
+
 /* Öÿ ôóíêö³ÿ âèêëèêàºòüñÿ êîæåí ðàç ïðè îòðèìàíí³ ïîâ³äîìëåííÿ â VK_UPDATE_WINDOW
  * ïðî çàâåðøåííÿ ñåñ³¿ Ìîäáàñ, ³í³ö³éîâàíî¿ ç îñíîâíîãî â³êíà*/
 static int f_tk5UpdateWindow(HWND hwnd, int wParam, int responce_status){
+	uint16_t x_value = 560;
 //   /***********************************************************************************************************
 //   * ÐÎÁÎÒÀ Ç ×ÅÐÃÎÞ ÏÎÂ²ÄÎÌËÅÍÜ ÌÎÄÁÀÑ
 //   ***********************************************************************************************************/
@@ -1899,7 +1901,7 @@ static int f_tk5UpdateWindow(HWND hwnd, int wParam, int responce_status){
 
 
 
-			uint16_t x_value = 560;
+
 
 
 			char str[128]={0};
@@ -1947,7 +1949,13 @@ static int f_tk5UpdateWindow(HWND hwnd, int wParam, int responce_status){
 			);
 			DrawText(hDCr, str, 19, &rectic, DT_SINGLELINE|DT_LEFT|DT_TOP);
 			memset(&str,0,sizeof(str));
+
 	   }
+//		m[0x3E]=g->mPOPUGAYS;
+//		m[0x3F]=g->kPOPUGAYS;
+
+
+
 	   if(y_leakAmperage_A != 0){
 
 //			leakAmperage_A
@@ -2328,6 +2336,21 @@ static int f_tk5UpdateWindow(HWND hwnd, int wParam, int responce_status){
 		}
     	RECT rectblue = {rect.left+680,rect.top+70,rect.left+819,rect.top+700};
     	FillRect(hDCr, &rectblue, (HBRUSH)29);
+
+    	if(y_cAmperage!=0){
+    		/* Ïîïóãà¿ òèìîô³éîâè÷ vS Êîçàê*/
+    		char str[50]={0};
+    		RECT rectict = {rect.left+x_value+140, rect.top+y_cAmperage,rect.left+839+140,rect.top+y_cAmperage+25};
+    		snprintf (str,sizeof(str),"%4d       %4d",
+    				grid_m16[0x3E],	/*dc(g->cAmperage_A)*/		grid_m16[0x3F] /*fr(g->cAmperage_A)*/
+    		);
+    		DrawText(hDCr, str, 19, &rectict, DT_SINGLELINE|DT_LEFT|DT_TOP);
+    		memset(&str,0,sizeof(str));
+    	}
+
+
+
+
         ReleaseDC(hwnd, hDCr);
 
 //	}//tk5ProcessState==1){/////////////////////////////////////////////////////////////////
