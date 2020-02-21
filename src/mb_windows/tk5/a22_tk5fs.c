@@ -13,6 +13,13 @@
 #include "../a3_tkTxRx.h"
 #include "../e1_passwordEdit.h"
 #include "../../mb_funcs/tkCRC.h"
+#include "a4_tk5log.h"
+#include "../../mb_funcs/vk_log.h"
+#include "commdlg.h"
+
+
+
+
 
 /* Глобальні змінні, передаються на обробку в вікно, яке повідомлення кидало в чергу */
 extern modbus_master_rx_msg_t mIn_rx_msg;
@@ -22,6 +29,9 @@ extern modbus_master_tx_msg_t mOut_tx_msg;
 extern modbus_status_t RxMasterModbusStatus;
 extern queue_t tk5Queue;
 extern const BYTE XORmaskTK_Icon[];
+
+
+LPOPENFILENAMEA FileNameFsAs;
 const char g_szClassNameTk5fs[] = "Tk5fs_WndClass";
 HINSTANCE hinstTk5;
 ProcessState_t tk5fsProcess=ProcessIddle;
@@ -54,8 +64,9 @@ static int f_facilitysettings_to_tk5Memory(HWND hwnd);
 static int f_tk5fsUpdateData(HWND hwnd, WPARAM wParam, int responce_status);
 static BOOL CALLBACK ChildCallbacktk5fs(HWND   hwnd,LPARAM lParam);
 static size_t f_wchar_to_char(const wchar_t * src, char * dest, size_t dest_len);
-
-
+static int f_tk5SetFilesWrite(void);
+static int f_tk5SetFilesRead(tk5fs_t *ptk5fsr);
+static int f_tk5SetFilesReadFile(tk5fs_t *ptk5fsr, char* sFileName);
 static uint16_t dc(float a);
 static uint16_t fr(float a);
 
@@ -108,9 +119,13 @@ HWND   f_CreateTk5fsWnd(HWND hh1){
 
 //		AppendMenu(hMenu, MF_STRING, IDM_Tk5FACILITY_SETTING_from_FS, "&Налаштування виробника");
 		AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-		AppendMenu(hMenu, MF_STRING, IDM_QUIT_Tk5FS, "&Вихід");
-		AppendMenu(hMenubar, MF_POPUP, (UINT_PTR) hMenu, "&Налаштування додатково");
 
+		AppendMenu(hMenubar, MF_POPUP, (UINT_PTR) hMenu, "&Файл");
+		AppendMenu(hMenu, MF_STRING, IDB_tk5WRITE_FACILITYSETTING_TO_PC_DESK_FILE, "&Зберегти налаштування виробника");
+		AppendMenu(hMenu, MF_STRING, IDB_tk5READ_FACILITYSETTING_FROM_PC_DESK_FILE, "&Зчитати налаштування виробника");
+
+
+		AppendMenu(hMenu, MF_STRING, IDM_QUIT_Tk5FS, "&Вихід");
 		SetMenu(fsHwnd, hMenubar);
 		ShowWindow(fsHwnd, SW_NORMAL);
 		UpdateWindow(fsHwnd);
@@ -627,6 +642,28 @@ LRESULT CALLBACK WndProcTk5fs(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					f_read_facilitysetting_from_tk5memory(hwnd);
 				}
 				break;
+				case IDB_tk5WRITE_FACILITYSETTING_TO_PC_DESK_FILE:{
+					f_tk5SetFilesWrite();
+
+				}
+				break;
+				case IDB_tk5READ_FACILITYSETTING_FROM_PC_DESK_FILE:{
+					tk5fs_t tk5fsr={0};
+					f_tk5SetFilesRead(&tk5fsr);
+					tk5fs=tk5fsr;
+					f_tk5fsUpdateData(hwnd, IDB_tk5READ_FACILITYSETTING_FROM_PC_DESK_FILE, 1);
+				}
+				break;
+				case IDB_tk5WRITE_FACILITYSETTING_FILE_AS:{
+
+					//BOOL b= GetSaveFileNameA(FileNameFsAs);
+
+				}
+				break;
+				case IDB_tk5READ_FACILITYSETTING_FILE_AS:{
+
+				}
+				break;
 				default:{}
 				}
 			}//WM_COMMAND
@@ -748,17 +785,17 @@ static int f_tk5fsUpdateData(HWND hwnd, WPARAM wParam, int responce_status){
     }
     else if(responce_status == 1){
     	switch(wParam){
-    	case IDB_tk5READ_FACILITYSETTING_FROM_MEMORY:{
-
+    	case IDB_tk5READ_FACILITYSETTING_FROM_MEMORY:
+    	case IDB_tk5READ_FACILITYSETTING_FROM_PC_DESK_FILE:{
     		EnumChildWindows(hwnd, ChildCallbacktk5fs, 0);
 
-        	if      (tk5fs.Faznost==1){
-        		SendMessage(hwnd_tk5fsDeviceMode, CB_SETCURSEL, 0, 0);
-        	}
-        	else if (tk5fs.Faznost==3){
-        		SendMessage(hwnd_tk5fsDeviceMode, CB_SETCURSEL, 1, 0);
-        	}
-        	else{}
+    		if      (tk5fs.Faznost==1){
+    		    SendMessage(hwnd_tk5fsDeviceMode, CB_SETCURSEL, 0, 0);
+    		}
+    		else if (tk5fs.Faznost==3){
+    		    SendMessage(hwnd_tk5fsDeviceMode, CB_SETCURSEL, 1, 0);
+    		}
+    		else{}
     		InvalidateRect(hwnd, NULL, TRUE);
     		UpdateWindow(hwnd);
     	}
@@ -775,42 +812,43 @@ static int f_tk5fsUpdateData(HWND hwnd, WPARAM wParam, int responce_status){
     return 0;
 
 }
+
 static BOOL CALLBACK ChildCallbacktk5fs(
 		HWND   hwnd,
 		LPARAM lParam
 ){
   char as[45]={0};
 	if(hwnd==hwnd_amperageAclbr){	// 0х2000
-		snprintf(as,sizeof(as),"%d.%04d",dc(tk5fs.amperageAclbr),fr(tk5fs.amperageAclbr));
+		snprintf(as,sizeof(as),"%d.%04d",tk5fs.amperageAclbr.d,tk5fs.amperageAclbr.f);
 		SetWindowTextA(hwnd_amperageAclbr,(LPCTSTR)as);
 	}
 	if(hwnd==hwnd_clbr_iA){
-		snprintf(as,sizeof(as),"%d.%04d",dc(tk5fs.clbr_iA),fr(tk5fs.clbr_iA));
+		snprintf(as,sizeof(as),"%d.%04d",tk5fs.clbr_iA.d,tk5fs.clbr_iA.f);
 		SetWindowTextA(hwnd_clbr_iA,(LPCTSTR)as);
 	}
     if(hwnd==hwnd_amperageBclbr){	// 0х2004
-    	snprintf(as,sizeof(as),"%d.%04d",dc(tk5fs.amperageBclbr),fr(tk5fs.amperageBclbr));
+    	snprintf(as,sizeof(as),"%d.%04d",tk5fs.amperageBclbr.d,tk5fs.amperageBclbr.f);
     	SetWindowTextA(hwnd_amperageBclbr,(LPCTSTR)as);
     }
 
     if(hwnd==hwnd_clbr_iB){			// 0х2006
-    	snprintf(as,sizeof(as),"%d.%04d",dc(tk5fs.clbr_iB),fr(tk5fs.clbr_iB));
+    	snprintf(as,sizeof(as),"%d.%04d",tk5fs.clbr_iB.d,tk5fs.clbr_iB.f);
     	SetWindowTextA(hwnd_clbr_iB,(LPCTSTR)as);
     }
     if(hwnd==hwnd_amperageCclbr){ 	// 0х2008
-    	snprintf(as,sizeof(as),"%d.%04d",dc(tk5fs.amperageCclbr),fr(tk5fs.amperageCclbr));
+    	snprintf(as,sizeof(as),"%d.%04d",tk5fs.amperageCclbr.d,tk5fs.amperageCclbr.f);
     	SetWindowTextA(hwnd_amperageCclbr,(LPCTSTR)as);
     }
     if(hwnd==hwnd_clbr_iC){			// 0х200A
-    	snprintf(as,sizeof(as),"%d.%04d",dc(tk5fs.clbr_iC),fr(tk5fs.clbr_iC));
+    	snprintf(as,sizeof(as),"%d.%04d",tk5fs.clbr_iC.d,tk5fs.clbr_iC.f);
     	SetWindowTextA(hwnd_clbr_iC,(LPCTSTR)as);
     }
     if(hwnd==hwnd_voltageCclbr){		// 0x200C
-    	snprintf(as,sizeof(as),"%d.%04d",dc(tk5fs.amperageCclbr),fr(tk5fs.amperageCclbr));
+    	snprintf(as,sizeof(as),"%d.%04d",tk5fs.amperageCclbr.d,tk5fs.amperageCclbr.f);
     	SetWindowTextA(hwnd_voltageCclbr,(LPCTSTR)as);
     }
     if(hwnd==hwnd_clbr_uC){			// 0х200E
-    	snprintf(as,sizeof(as),"% d.%04d",dc(tk5fs.clbr_uC),fr(tk5fs.clbr_uC));
+    	snprintf(as,sizeof(as),"% d.%04d",tk5fs.clbr_uC.d,tk5fs.clbr_uC.f);
     	SetWindowTextA(hwnd_clbr_uC,(LPCTSTR)as);
     }
     if(hwnd==hwnd_tk5fsDeviceMode){      	// 0x2010
@@ -841,34 +879,34 @@ static int f_facilitysettings_to_tk5Memory(HWND hwnd){
 		err=f_checkEditWCHAR(hwnd_amperageAclbr, hwnd, &fl);
 //		err = f_checkEdit(IDE_AMPERAGEACLBR, hwnd, &fl);
 		if(err != 0){f_valueEditMessageBox(err);break;};
-		tk5fs.amperageAclbr=fl.floatf;
+		tk5fs.amperageAclbr=fl;
 
 		err = f_checkEditWCHAR(hwnd_clbr_iA, hwnd, &fl);
 		if(err != 0){f_valueEditMessageBox(err);
 		break;
 		};
-		tk5fs.clbr_iA=fl.floatf;
+		tk5fs.clbr_iA=fl;
 
 		err=f_checkEditWCHAR(hwnd_amperageBclbr, hwnd, &fl);
 //		if(err != 0){f_valueEditMessageBox(err);break;};
-		tk5fs.amperageBclbr=fl.floatf;
+		tk5fs.amperageBclbr=fl;
 		err = f_checkEditWCHAR(hwnd_clbr_iB, hwnd, &fl);
 //		if(err != 0){f_valueEditMessageBox(err);break;};
-		tk5fs.clbr_iB=fl.floatf;
+		tk5fs.clbr_iB=fl;
 
 		err=f_checkEditWCHAR(hwnd_amperageAclbr, hwnd, &fl);
 //		if(err != 0){f_valueEditMessageBox(err);break;};
-		tk5fs.amperageCclbr=fl.floatf;
+		tk5fs.amperageCclbr=fl;
 		err = f_checkEditWCHAR(hwnd_clbr_iC, hwnd, &fl);
 //		if(err != 0){f_valueEditMessageBox(err);break;};
-		tk5fs.clbr_iC=fl.floatf;
+		tk5fs.clbr_iC=fl;
 
 		err=f_checkEditWCHAR(hwnd_voltageCclbr, hwnd, &fl);
 //		if(err != 0){f_valueEditMessageBox(err);break;};
-		tk5fs.voltageCclbr=fl.floatf;
+		tk5fs.voltageCclbr=fl;
 		err = f_checkEditWCHAR(hwnd_clbr_uC, hwnd, &fl);
 //		if(err != 0){f_valueEditMessageBox(err);break;};
-		tk5fs.clbr_uC=fl.floatf;
+		tk5fs.clbr_uC=fl;
 
 /* Запит - який саме номер по порядку з меню вибраний (незалежно від комбобоксу */
 		int ItemIndex = 0;
@@ -895,22 +933,22 @@ static int f_facilitysettings_to_tk5Memory(HWND hwnd){
 	mbTxMsg.msg[6]=ByteCntr;/*  */
 
 //  float amperageAclbr; 	// 0х2020
-    f_03_float_to_Tx(tk5fs.amperageAclbr, 	&mbTxMsg, 0x00);
+    f_03_float2_to_Tx(&tk5fs.amperageAclbr,   &mbTxMsg, 0x00);
 //  float clbr_iA;			// 0х2022
-    f_03_float_to_Tx(tk5fs.clbr_iA, 		&mbTxMsg, 0x04);
+    f_03_float2_to_Tx(&tk5fs.clbr_iA, 		&mbTxMsg, 0x04);
 //  float amperageBclbr; 	// 0х2024
-    f_03_float_to_Tx(tk5fs.amperageBclbr, 	&mbTxMsg, 0x08);
+    f_03_float2_to_Tx(&tk5fs.amperageBclbr, 	&mbTxMsg, 0x08);
 //  float clbr_iB;			// 0х2026
-    f_03_float_to_Tx(tk5fs.clbr_iB, 		&mbTxMsg, 0x0C);//float amperageCclbr; 		// 0х2008
+    f_03_float2_to_Tx(&tk5fs.clbr_iB, 		&mbTxMsg, 0x0C);//float amperageCclbr; 		// 0х2008
     //  float amperageCclbr; 	// 0х2004
-	f_03_float_to_Tx(tk5fs.amperageCclbr, 	&mbTxMsg, 0x10);
+	f_03_float2_to_Tx(&tk5fs.amperageCclbr, 	&mbTxMsg, 0x10);
 	//float clbr_iC;			// 0х200A
-	f_03_float_to_Tx(tk5fs.clbr_iC,       	&mbTxMsg, 0x14);
+	f_03_float2_to_Tx(&tk5fs.clbr_iC,       	&mbTxMsg, 0x14);
 
 	//fSet.voltageCclbr			//0x200C
-	f_03_float_to_Tx(tk5fs.voltageCclbr,  	&mbTxMsg, 0x18);
+	f_03_float2_to_Tx(&tk5fs.voltageCclbr,  	&mbTxMsg, 0x18);
 	//float clbr_uC;			// 0х200E
-	f_03_float_to_Tx(tk5fs.clbr_uC,       	&mbTxMsg, 0x1C);
+	f_03_float2_to_Tx(&tk5fs.clbr_uC,       	&mbTxMsg, 0x1C);
 
 	//uint16_t DeviceMode;     	//0x1010 Типорозмір контролера 1...5
 	value_i=(uint16_t)tk5fs.DeviceMode;
@@ -976,3 +1014,180 @@ static size_t f_wchar_to_char(const wchar_t * src, char * dest, size_t dest_len)
   return i - 1;
 
 }
+
+/* Ця функція створює і відкриває новий файл для запису алаштувань виробника .
+ * Викликається з меню заводських налаштувань  tk5 */
+
+FILE *file_to_safe_set;
+char  setFileName[248]={0};
+char  pInd[]="tk5";
+static int f_tk5SetFilesWrite(void){
+	  memset(&setFileName,0,sizeof(setFileName));
+	  int nbr=0;
+	  while(nbr==0){
+		  int file_name_length=0;
+		  file_name_length=f_tkSetFiles_Init(pInd, setFileName, tk5fs.DeviceMode);
+		  if(file_name_length==0){nbr= -2;break;}
+		  if(file_name_length>248){nbr= -3;break;}
+		  file_to_safe_set= fopen(setFileName, "w");
+		  if(file_to_safe_set==NULL){nbr= -1;break;}
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр.струм_iА  %05d %05d", tk5fs.amperageAclbr.d, tk5fs.amperageAclbr.f);
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр_iА        %05d %05d", tk5fs.clbr_iA.d,       tk5fs.clbr_iA.f);
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр.струм_iB  %05d %05d", tk5fs.amperageBclbr.d, tk5fs.amperageBclbr.f);
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр_iB        %05d %05d", tk5fs.clbr_iB.d,       tk5fs.clbr_iB.f);
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр.струм_iC  %05d %05d", tk5fs.amperageCclbr.d, tk5fs.amperageCclbr.f);
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр_iC        %05d %05d", tk5fs.clbr_iC.d,       tk5fs.clbr_iC.f);
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр.напр__uC  %05d %05d", tk5fs.voltageCclbr.d, tk5fs.voltageCclbr.f);
+		  nbr+=fprintf(file_to_safe_set, "\nКлбр_uC        %05d %05d", tk5fs.clbr_uC.d,       tk5fs.clbr_uC.f);
+		  nbr+=fprintf(file_to_safe_set, "\nТипорозмір     %05d",     tk5fs.DeviceMode);
+		  nbr+=fprintf(file_to_safe_set, "\nФазність       %05d",     tk5fs.Faznost);
+		  fclose(file_to_safe_set);
+	  }
+	  return nbr;
+}
+
+
+static int f_tk5SetFilesRead(tk5fs_t *ptk5fsr){
+	memset(&setFileName, 0, sizeof(setFileName));
+	int rs=f_tkSetFilesReadSrch(tk5fs.DeviceMode, &setFileName);
+	if(rs!=0){
+		f_tk5SetFilesReadFile(ptk5fsr, setFileName);
+	}
+	else rs=-1;
+	return rs;
+}
+static int f_tk5SetFilesReadFile(tk5fs_t *ptk5fsr, char* sFileName){
+
+	  //r"	Opens for reading. If the file does not exist or cannot be found, the fopen call fails.
+	  int return_value=0;
+	  while(return_value==0){
+		  file_to_safe_set= fopen(sFileName, "r");
+		  if(file_to_safe_set==NULL){return_value=-1;break;}
+		  char str[64]={0};
+		  float2_t fl={0};
+		  return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+		  fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->amperageAclbr=fl;
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->clbr_iA=fl;
+
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->amperageBclbr=fl;
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->clbr_iB=fl;
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->amperageCclbr=fl;
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->clbr_iC=fl;
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->voltageCclbr=fl;
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d %05d", str, &(fl.d), &(fl.f));
+	      fl.floatf=(float)fl.d+(float)fl.f/10000.0f;
+	      ptk5fsr->clbr_uC=fl;
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d",      str, (int*)(&ptk5fsr->DeviceMode));
+	      return_value+=fscanf(file_to_safe_set, "%16s  %05d",      str, (int*)(&ptk5fsr->Faznost));
+	      if(return_value==0){return_value=-100;}
+	      //https://learnc.info/c/text_files.html
+	      fclose(file_to_safe_set);
+
+	  }
+	  return return_value;
+
+}
+//HRESULT BasicFileOpen()
+//{
+//    // CoCreate the File Open Dialog object.
+//    IFileDialog *pfd = NULL;
+//    HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog,
+//                      NULL,
+//                      CLSCTX_INPROC_SERVER,
+//                      IID_PPV_ARGS(&pfd));
+//    if (SUCCEEDED(hr))
+//    {
+//        // Create an event handling object, and hook it up to the dialog.
+//        IFileDialogEvents *pfde = NULL;
+//        hr = CDialogEventHandler_CreateInstance(IID_PPV_ARGS(&pfde));
+//        if (SUCCEEDED(hr))
+//        {
+//            // Hook up the event handler.
+//            DWORD dwCookie;
+//            hr = pfd->Advise(pfde, &dwCookie);
+//            if (SUCCEEDED(hr))
+//            {
+//                // Set the options on the dialog.
+//                DWORD dwFlags;
+//
+//                // Before setting, always get the options first in order
+//                // not to override existing options.
+//                hr = pfd->GetOptions(&dwFlags);
+//                if (SUCCEEDED(hr))
+//                {
+//                    // In this case, get shell items only for file system items.
+//                    hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
+//                    if (SUCCEEDED(hr))
+//                    {
+//                        // Set the file types to display only.
+//                        // Notice that this is a 1-based array.
+//                        hr = pfd->SetFileTypes(ARRAYSIZE(c_rgSaveTypes), c_rgSaveTypes);
+//                        if (SUCCEEDED(hr))
+//                        {
+//                            // Set the selected file type index to Word Docs for this example.
+//                            hr = pfd->SetFileTypeIndex(INDEX_WORDDOC);
+//                            if (SUCCEEDED(hr))
+//                            {
+//                                // Set the default extension to be ".doc" file.
+//                                hr = pfd->SetDefaultExtension(L"doc;docx");
+//                                if (SUCCEEDED(hr))
+//                                {
+//                                    // Show the dialog
+//                                    hr = pfd->Show(NULL);
+//                                    if (SUCCEEDED(hr))
+//                                    {
+//                                        // Obtain the result once the user clicks
+//                                        // the 'Open' button.
+//                                        // The result is an IShellItem object.
+//                                        IShellItem *psiResult;
+//                                        hr = pfd->GetResult(&psiResult);
+//                                        if (SUCCEEDED(hr))
+//                                        {
+//                                            // We are just going to print out the
+//                                            // name of the file for sample sake.
+//                                            PWSTR pszFilePath = NULL;
+//                                            hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,
+//                                                               &pszFilePath);
+//                                            if (SUCCEEDED(hr))
+//                                            {
+//                                                TaskDialog(NULL,
+//                                                           NULL,
+//                                                           L"CommonFileDialogApp",
+//                                                           pszFilePath,
+//                                                           NULL,
+//                                                           TDCBF_OK_BUTTON,
+//                                                           TD_INFORMATION_ICON,
+//                                                           NULL);
+//                                                CoTaskMemFree(pszFilePath);
+//                                            }
+//                                            psiResult->Release();
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//                // Unhook the event handler.
+//                pfd->Unadvise(dwCookie);
+//            }
+//            pfde->Release();
+//        }
+//        pfd->Release();
+//    }
+//    return hr;
+//}

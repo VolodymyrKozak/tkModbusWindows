@@ -22,6 +22,7 @@ extern modbus_master_tx_msg_t mOut_tx_msg;
 /* Глобальні змінні, передаються на обробку в вікно, яке повідомлення кидало в чергу */
 extern modbus_status_t RxMasterModbusStatus;
 tk5user_settings_t Tk5us={0};
+//tk5user_settings_t Tk5usOld={0};
 uint16_t y_motor_or_powersupply = 80;
 HWND     h_motor_or_powersupply = NULL;
 extern HWND hWndTk5fsCh;

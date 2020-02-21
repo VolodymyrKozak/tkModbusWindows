@@ -199,47 +199,46 @@ int32_t f_tk5QPWD_RgAnswer(
     			uint16_t value_i=0;
 
     			/* i тут підуть усі інші налаштування */
-    			uint16_t dec=0;
-    			uint16_t fra=0;
+
 //    			float amperageAclbr; 	// 0х2000
-    			dec=mb_rx_msg->msg[3+0x00]*0x100+mb_rx_msg->msg[3+ 0x01];
-    			fra=mb_rx_msg->msg[3+0x02]*0x100+mb_rx_msg->msg[3+ 0x03];
-    			tk5fs.amperageAclbr=(float)dec+(float)fra/10000.f;
+				tk5fs.amperageAclbr.d=mb_rx_msg->msg[3+0x00]*0x100+mb_rx_msg->msg[3+ 0x01];
+    			tk5fs.amperageAclbr.f=mb_rx_msg->msg[3+0x02]*0x100+mb_rx_msg->msg[3+ 0x03];
+    			tk5fs.amperageAclbr.floatf=(float)tk5fs.amperageAclbr.d+(float)tk5fs.amperageAclbr.f/10000.f;
 
 //    			float clbr_iA;			// 0х2002
-    			dec=mb_rx_msg->msg[3+0x04]*0x100+mb_rx_msg->msg[3+ 0x05];
-    			fra=mb_rx_msg->msg[3+0x06]*0x100+mb_rx_msg->msg[3+ 0x07];
-    			tk5fs.clbr_iA=(float)dec+(float)fra/10000.f;
+    			tk5fs.clbr_iA.d=mb_rx_msg->msg[3+0x04]*0x100+mb_rx_msg->msg[3+ 0x05];
+    			tk5fs.clbr_iA.f=mb_rx_msg->msg[3+0x06]*0x100+mb_rx_msg->msg[3+ 0x07];
+    			tk5fs.clbr_iA.floatf=(float)tk5fs.clbr_iA.d+(float)tk5fs.clbr_iA.f/10000.f;
 
 //    			float amperageBclbr; 	// 0х2004
-    			dec=mb_rx_msg->msg[3+0x08]*0x100+mb_rx_msg->msg[3+ 0x09];
-    			fra=mb_rx_msg->msg[3+0x0A]*0x100+mb_rx_msg->msg[3+ 0x0B];
-    			tk5fs.amperageBclbr=(float)dec+(float)fra/10000.f;
+    			tk5fs.amperageBclbr.d=mb_rx_msg->msg[3+0x08]*0x100+mb_rx_msg->msg[3+ 0x09];
+    			tk5fs.amperageBclbr.f=mb_rx_msg->msg[3+0x0A]*0x100+mb_rx_msg->msg[3+ 0x0B];
+    			tk5fs.amperageBclbr.floatf=(float)tk5fs.amperageBclbr.d+(float)tk5fs.amperageBclbr.d/10000.f;
 
 //    			float clbr_iB;			// 0х2006
-    			dec=mb_rx_msg->msg[3+0x0C]*0x100+mb_rx_msg->msg[3+ 0x0D];
-    			fra=mb_rx_msg->msg[3+0x0E]*0x100+mb_rx_msg->msg[3+ 0x0F];
-    			tk5fs.clbr_iB=(float)dec+(float)fra/10000.f;
+    			tk5fs.clbr_iB.d=mb_rx_msg->msg[3+0x0C]*0x100+mb_rx_msg->msg[3+ 0x0D];
+    			tk5fs.clbr_iB.f=mb_rx_msg->msg[3+0x0E]*0x100+mb_rx_msg->msg[3+ 0x0F];
+    			tk5fs.clbr_iB.floatf=(float)tk5fs.clbr_iB.d+(float)tk5fs.clbr_iB.f/10000.f;
 
 //    			float amperageCclbr; 	// 0х2008
-    			dec=mb_rx_msg->msg[3+0x10]*0x100+mb_rx_msg->msg[3+ 0x11];
-    			fra=mb_rx_msg->msg[3+0x12]*0x100+mb_rx_msg->msg[3+ 0x13];
-    			tk5fs.amperageCclbr=(float)dec+(float)fra/10000.f;
+    			tk5fs.amperageCclbr.d=mb_rx_msg->msg[3+0x10]*0x100+mb_rx_msg->msg[3+ 0x11];
+    			tk5fs.amperageCclbr.f=mb_rx_msg->msg[3+0x12]*0x100+mb_rx_msg->msg[3+ 0x13];
+    			tk5fs.amperageCclbr.floatf=(float)tk5fs.amperageCclbr.d+(float)tk5fs.amperageCclbr.f/10000.f;
 
 //    			float clbr_iC;			// 0х200A
-    			dec=mb_rx_msg->msg[3+0x14]*0x100+mb_rx_msg->msg[3+ 0x15];
-    			fra=mb_rx_msg->msg[3+0x16]*0x100+mb_rx_msg->msg[3+ 0x17];
-    			tk5fs.clbr_iC=(float)dec+(float)fra/10000.f;
+    			tk5fs.clbr_iC.d=mb_rx_msg->msg[3+0x14]*0x100+mb_rx_msg->msg[3+ 0x15];
+    			tk5fs.clbr_iC.f=mb_rx_msg->msg[3+0x16]*0x100+mb_rx_msg->msg[3+ 0x17];
+    			tk5fs.clbr_iC.floatf=(float)tk5fs.clbr_iC.d+(float)tk5fs.clbr_iC.f/10000.f;
 
 //    			fSet.voltageCclbr		//0x200C
-    			dec=mb_rx_msg->msg[3+0x18]*0x100+mb_rx_msg->msg[3+ 0x19];
-    			fra=mb_rx_msg->msg[3+0x1A]*0x100+mb_rx_msg->msg[3+ 0x1B];
-    			tk5fs.voltageCclbr=(float)dec+(float)fra/10000.f;
+    			tk5fs.voltageCclbr.d=mb_rx_msg->msg[3+0x18]*0x100+mb_rx_msg->msg[3+ 0x19];
+    			tk5fs.voltageCclbr.f=mb_rx_msg->msg[3+0x1A]*0x100+mb_rx_msg->msg[3+ 0x1B];
+    			tk5fs.voltageCclbr.floatf=(float)tk5fs.voltageCclbr.d+(float)tk5fs.voltageCclbr.f/10000.f;
 
 //    			float clbr_uC;			// 0х200E
-    			dec=mb_rx_msg->msg[3+0x1C]*0x100+mb_rx_msg->msg[3+ 0x1D];
-    			fra=mb_rx_msg->msg[3+0x1E]*0x100+mb_rx_msg->msg[3+ 0x1F];
-    			tk5fs.clbr_uC=(float)dec+(float)fra/10000.f;
+    			tk5fs.clbr_uC.d=mb_rx_msg->msg[3+0x1C]*0x100+mb_rx_msg->msg[3+ 0x1D];
+    			tk5fs.clbr_uC.f=mb_rx_msg->msg[3+0x1E]*0x100+mb_rx_msg->msg[3+ 0x1F];
+    			tk5fs.clbr_uC.floatf=(float)tk5fs.clbr_uC.d+(float)tk5fs.clbr_uC.f/10000.f;
 
 //    			uint16_t DeviceMode;     //0x1010 Типорозмір контролера 1...5
     			uint16_t value =0;

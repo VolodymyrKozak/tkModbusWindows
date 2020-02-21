@@ -19,17 +19,17 @@
 
 
 typedef struct {
-	float amperageAclbr; 	// 0х2000
-	float clbr_iA;			// 0х2002
+	float2_t amperageAclbr; 	// 0х2000
+	float2_t clbr_iA;			// 0х2002
 
-	float amperageBclbr;	// 0х2004
-	float clbr_iB;			// 0х2006
+	float2_t amperageBclbr;	// 0х2004
+	float2_t clbr_iB;			// 0х2006
 
-	float amperageCclbr;    // 0х2008
-	float clbr_iC;	        // 0х200A
+	float2_t amperageCclbr;    // 0х2008
+	float2_t clbr_iC;	        // 0х200A
 
-	float voltageCclbr;		// 0х200C
-	float clbr_uC;			// 0х200E
+	float2_t voltageCclbr;		// 0х200C
+	float2_t clbr_uC;			// 0х200E
 
 	uint16_t DeviceMode;     //0x1010 “ипорозм≥р контролера 1...5
 	uint16_t Faznost;		 //0x1011

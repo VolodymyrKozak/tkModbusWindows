@@ -39,4 +39,13 @@ FILE* f_tk5check_logFilename(FILE *fp){
 	return fl;
 }
 
+
  //fclose(fp_tk2log);
+//TheForger's WinAPI tutorial is the best IMHO and the part I linked also answers your question.
+//
+//In WinAPI, the save and open dialogs are created by the functions GetSaveFileName() and GetOpenFileName().
+//The parameters of the dialog, such as the file name filter is stored in an OPENFILENAME struct.
+//
+//GetOpenFileName
+//GetSaveFileName
+//OPENFILENAME struct

@@ -140,30 +140,28 @@ int8_t f_03_float_to_Tx(
 		uint16_t i){               // íîìåğ áàéòà, ç ÿêîãî çàïèñàòè ÷èñëî float â ÷îòèğè áàéòè
 	if (tx==NULL)  {return -1;}
 	if ((i%4)!= 0) {return -1;}
-	uint16_t regfloat[2]={0};
-	f_float_to_2x16(af, regfloat);
-	tx->msg[7+i+0x00] = regfloat[0] / 0x100;
-	tx->msg[7+i+0x01] = regfloat[0] % 0x100;
-	tx->msg[7+i+0x02] = regfloat[1] / 0x100;
-	tx->msg[7+i+0x03] = regfloat[1] % 0x100;
+	uint16_t dec=(uint16_t)af;
+	uint16_t fra=(uint16_t)((af-(float)dec)*10000.0f);
+
+	tx->msg[7+i+0x00] = dec / 0x100;
+	tx->msg[7+i+0x01] = dec % 0x100;
+	tx->msg[7+i+0x02] = fra / 0x100;
+	tx->msg[7+i+0x03] = fra % 0x100;
 	return 0;
 }
-/* Öÿ ôóíêö³ÿ ïåğåòâîğşº ÷èñëî ç ïëàâàş÷îş êğàïêîş
- * íà ìàñèâ ç äâîõ ÷èñåë - ö³ëîş ÷àñòèíè float
- * òà äğîáíî¿ ÷àñòèíè float ïåğø³ ÷îòèğè äåñÿòè÷í³ öèôğè
- * Àğãóìåíòè =
- * 		âõ³äíå ÷èñëî float af
- * 		ïîêàç÷èê íà ìàñèâ äâîõ ÷èñëå int16_t
- * Ôóíêö³ÿ ïîâåğòàº
- *      0, ÿêùî âñå Îê
- *      -1,ÿêùî ÷èñëî íàäòî âåëèêå àáî íåìàº ïîêàç÷èêà íà ìàñèâ*/
-int8_t f_float_to_2x16(float af, uint16_t *ptwo){
-	if((af>65000.0f)||(ptwo==NULL)){	return -1;}
-	else {
-		ptwo[0] = (uint16_t)af;
-		float r     =(float)ptwo[0];
-		float q     =(af-r)*10000.0f;
-		ptwo[1] = (uint16_t)(q);
-		return 0;
-	}
+
+
+int8_t f_03_float2_to_Tx(
+		float2_t *pf,                  // âõ³äíå ÷èñëî
+		modbus_master_tx_msg_t *tx, // ïîêàç÷èê íà âèõ³äíå ïîâ³äîìëåííÿ Ìîäáàñ
+		uint16_t i){               // íîìåğ áàéòà, ç ÿêîãî çàïèñàòè ÷èñëî float â ÷îòèğè áàéòè
+	if (tx==NULL)  {return -1;}
+	if ((i%4)!= 0) {return -1;}
+
+	tx->msg[7+i+0x00] = pf->d / 0x100;
+	tx->msg[7+i+0x01] = pf->d % 0x100;
+	tx->msg[7+i+0x02] = pf->f / 0x100;
+	tx->msg[7+i+0x03] = pf->f % 0x100;
+	return 0;
 }
+
