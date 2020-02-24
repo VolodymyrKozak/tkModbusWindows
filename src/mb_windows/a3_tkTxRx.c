@@ -134,6 +134,7 @@ static modbus_status_t f_tkTxRx(
 void f_desktop_tk_session (
 		queue_t *htkQ           /* показчик на структуру - дескриптор черги*/
 	){
+
 	int status = 0;
 	static uint32_t TxRxSessionStartEtime;
 	static uint32_t TxRxSessionStopEtime;
